@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Emerson_WeatherWebApp.props" />
+</Project>

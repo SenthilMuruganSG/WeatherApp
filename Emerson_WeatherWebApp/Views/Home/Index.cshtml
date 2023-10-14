@@ -1,0 +1,545 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<style type="text/css">
+    .highcharts-figure,
+    .highcharts-data-table table {
+        min-width: 310px;
+        max-width: 800px;
+        margin: 1em auto;
+    }
+
+    .highcharts-data-table table {
+        font-family: Verdana, sans-serif;
+        border-collapse: collapse;
+        border: 1px solid #ebebeb;
+        margin: 10px auto;
+        text-align: center;
+        width: 100%;
+        max-width: 500px;
+    }
+
+    .highcharts-data-table caption {
+        padding: 1em 0;
+        font-size: 1.2em;
+        color: #555;
+    }
+
+    .highcharts-data-table th {
+        font-weight: 600;
+        padding: 0.5em;
+    }
+
+    .highcharts-data-table td,
+    .highcharts-data-table th,
+    .highcharts-data-table caption {
+        padding: 0.5em;
+    }
+
+    .highcharts-data-table thead tr,
+    .highcharts-data-table tr:nth-child(even) {
+        background: #f8f8f8;
+    }
+
+    .highcharts-data-table tr:hover {
+        background: #f1f7ff;
+    }
+
+</style>
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    </div>
+    <div class="card-body">
+        <div class="row">
+
+            <div class="col-md-3">
+                <label for="lblVariable" class="col-sm-12">Variable</label>
+                <div class="form-group row" >
+                <select id="ddlVariable" class="form-control">
+                    <option value=""> Select</option>
+                    <option value="Humidity"> Humidity</option>
+                    <option value="Temperature"> Temperature</option>
+                </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="lblFromDate" class="col-sm-12">Start Date</label>
+                <div class="form-group row">
+                <input type="date" id="fromTimestamp" class="form-control" min='2023-01-01' max='2023-02-01' value="2023-01-01" />
+                    <i class="fa fa-calendar"></i>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="lblEndDate" class="col-sm-12">End Date</label>
+                <div class="form-group row">
+                <input type="date" id="toTimeStamp" class="form-control" min='2023-01-01' max='2023-02-01' value="2023-01-31" />
+                    <i class="fa fa-calendar"></i>
+                </div>
+            </div>
+    </div>
+           <div class="row">
+            <div class="col-md-3">
+                <label for="lblCity" class="col-sm-12">City</label>
+                <div class="form-group row">
+                <select id="ddlCity" class="form-control"></select>
+                </div>
+            </div>
+        <div class="col-md-4">
+            <label for="lblCity" class="col-sm-12"></label>
+            <div class="btn-center" style="vertical-align:central">
+
+                <button type="submit"  id="btnSearch"  class="btn btn-search">Search</button> &nbsp;
+                 
+            </div>
+        </div>
+        </div>
+      
+    </div>
+       <div class="row">
+
+    <figure >
+        <div id="container"></div>
+
+    </figure>
+       </div>
+
+
+<div class ="row">
+    <div class="col-sm-6">
+        <div class="card card-body  p-b-0">
+            <h5 class="card-title">Hottest City</h5>
+            <!-- Row -->
+            <div class="row p-t-10 p-b-10">
+                <!-- Column -->
+                <div class="col p-r-0 p-l-10">
+                      <h3 id="hottestCity"></h3>
+                    Total Days: <h4 id="hottestday"></h4>
+                    <!-- <h6 class="text-green"><i class="fa fa-long-arrow-up m-r-5"></i>
+                       </h6> -->
+                </div>
+                <!-- Column -->
+                <div class="col text-right align-self-center">
+                    <label class="label label-green"><i class="fa fa-institution (alias)"></i></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <div class="card card-body  p-b-0">
+            <h5 class="card-title">Moistest City</h5>
+            <!-- Row -->
+            <div class="row p-t-10 p-b-10">
+                <!-- Column -->
+                <div class="col p-r-0 p-l-10">
+                    <h3 id="moistestCity"></h3>
+                    Average humidity: <h4 id="moistestCount"></h4>
+                    <!-- <h6 class="text-green"><i class="fa fa-long-arrow-up m-r-5"></i>
+                       </h6> -->
+                </div>
+                <!-- Column -->
+                <div class="col text-right align-self-center">
+                    <label class="label label-green"><i class="fa fa-institution (alias)"></i></label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+    <script type="text/javascript">
+    var _apiURL = window.location.origin;//"https://localhost:44385";
+    var yAxisLabel = "Temperature";
+    var City="";
+    var FromDate=new Date(2023, 0, 1);
+    var ToDate = new Date(2023, 0, 31);
+
+    $(function () {
+       
+       
+
+        LoadCity();
+        GetAverageHumidity(0);
+        GetHottestCityDayCount(0);
+
+         var InputObject = { variableName: yAxisLabel, cityId: "1", startDate: (FromDate), endDate: (ToDate) };
+                LoadTempratureData(InputObject); 
+
+        function OnChangeControls()
+        {
+            yAxisLabel = $("#ddlVariable option:selected").val();
+            City = $("#ddlCity option:selected").text();
+            var CityId = $("#ddlCity option:selected").val();
+            FromDate = new Date($('#fromTimestamp').val());
+            ToDate = new Date($('#toTimeStamp').val());
+
+            if (yAxisLabel != "" && CityId != "0" && FromDate != null && ToDate != null) {
+                var InputObject = { variableName: yAxisLabel, cityId: CityId, startDate: (FromDate), endDate: (ToDate) };
+                LoadTempratureData(InputObject);
+            }
+
+        }
+
+        $("#ddlCity").on("change", function () {
+            OnChangeControls();
+        });
+
+         $("#ddlVariable").on("change", function () {
+            OnChangeControls();
+        });
+        $("#fromTimestamp").on("change", function () {
+            OnChangeControls();
+        });
+        $("#toTimeStamp").on("change", function () {
+            OnChangeControls();
+        });
+
+         $("#btnSearch").on("click", function () { 
+           yAxisLabel =  $("#ddlVariable option:selected").val(); 
+           City = $("#ddlCity option:selected").text();
+           var CityId = $("#ddlCity option:selected").val();
+           FromDate =  new Date($('#fromTimestamp').val());
+           ToDate = new Date($('#toTimeStamp').val());
+
+            if (yAxisLabel != "" && CityId != "0" && FromDate != null && ToDate!=null)
+            {
+                var InputObject = { variableName: yAxisLabel, cityId: CityId, startDate: (FromDate), endDate: (ToDate) };
+                LoadTempratureData(InputObject);
+            }
+            else 
+            {
+                if (yAxisLabel=="")
+                    alert("Please select the Variable.");
+                if (City == "0")
+                    alert("Please select the City.");
+                    
+                if (FromDate == null || ToDate==null)
+                    alert("Please select From and To Date");
+            }
+
+        });
+
+        function formatDate(date) {
+            return ((date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear());
+        }
+
+        function GetHottestCityDayCount(month) {
+            $.ajax({
+                type: "GET",
+                url: _apiURL + "/api/Weather/GetHighTemperatureCityData/" + month,
+                contentType: "application/json",
+                async:true,
+                success: function (result) {
+                    if (result.isSuccess) {
+                        
+                        $("#hottestCity").text(result.cityHighTemperature.cityName);
+                        $("#hottestday").text(result.cityHighTemperature.totalDays)
+                        
+
+                    } else {
+                        alert(result.message);
+                    }
+                },
+                error: function (xmlHttpRequest, textStatus) {
+                    alert(textStatus);
+                }
+            });
+
+        }
+
+        function GetAverageHumidity(month) {
+            $.ajax({
+                type: "GET",
+                url: _apiURL + "/api/Weather/GetAvgHumidityCityData/" + month,
+                contentType: "application/json",
+                async:true,
+                success: function (result) {
+                    if (result.isSuccess) {
+
+                        $("#moistestCity").text(result.cityAverageHumidity.cityName);
+                        $("#moistestCount").text(result.cityAverageHumidity.averageHumidity.toFixed(2))
+
+
+                    } else {
+                        alert(result.message);
+                    }
+                },
+                error: function (xmlHttpRequest, textStatus) {
+                    alert(textStatus);
+                }
+            });
+
+        }
+        
+        function LoadCity()
+        {
+            $.ajax({
+                type: "GET",
+                url: _apiURL + "/api/Weather/GetCityList", 
+                contentType: "application/json", 
+                async:true,
+                success: function (result) {
+                    if (result.isSuccess) {
+                        var city = result.cityList;
+                        var opt = new Option("Select", "0");
+                        $('#ddlCity').append(opt);
+                        for (var i = 0; i < city.length; i++) {
+                            var opt = new Option(city[i].cityName, city[i].id);
+                            $('#ddlCity').append(opt);
+
+                        }
+
+                    } else {
+                        alert(result.message);
+                    }
+                },
+                error: function (xmlHttpRequest, textStatus) {
+                    alert(textStatus);
+                }
+            });
+             
+        }
+
+        function LoadTempratureData(filterInput)
+        {
+            $.ajax({
+                type: "POST",
+                url: _apiURL + "/api/Weather/GetVariableData",
+                data: JSON.stringify(filterInput),
+                contentType: "application/json", 
+                async: true,
+                success: function (result) {
+                    if (result.isSuccess) {
+                        var data = result.variableDatas;
+                        var TempratureData=[];
+                        data.forEach(element => {
+                            TempratureData.push(parseFloat(element.value));
+                        });
+                        
+                        LoadTemperatureChart(TempratureData);
+
+                    } else { 
+                        alert(result.message);
+                    }
+                },
+                error: function (xmlHttpRequest, textStatus) {
+                    alert(textStatus);
+                }
+            });
+        }
+        function LoadTemperatureChart(tempratureData) {
+
+            if (yAxisLabel=="Humidity")
+            {
+                Highcharts.chart('container', {
+                    chart: {
+                        type: 'spline',
+                        scrollablePlotArea: {
+                            minWidth: 600,
+                            scrollPositionX: 1
+                        }
+                    },
+                    title: {
+                        text: City + ' ' + yAxisLabel + ' for the period of ' + formatDate(FromDate) + ' and ' + formatDate(ToDate),
+                        align: 'left'
+                    },
+                    xAxis: {
+                        type: 'datetime',
+                        labels: {
+                            overflow: 'justify'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: yAxisLabel
+                        },
+                        minorGridLineWidth: 0,
+                        gridLineWidth: 0,
+                        alternateGridColor: null,
+                        plotBands: [{ // Low (less than 25 °C)
+                            from: 0,
+                            to: 25,
+                            color: '#F64555',
+                            label: {
+                                text: 'Poor Low(0 to 25 %)',
+                                style: {
+                                    color: '#FFFFFF'
+                                }
+                            }
+                        },
+                            , { // High (higher than 25 °C)
+                            from: 25,
+                            to: 30,
+                            color: '#FCC000',
+                            label: {
+                                text: 'Fair (25 to 30 %)',
+                                style: {
+                                    color: '#FFFFFF'
+                                }
+                            }
+                        },
+                            , { // High (higher than 35 °C)
+                            from: 30,
+                            to: 60,
+                            color: '#4AC688',
+                            label: {
+                                text: 'Healthy Level (30 to 60 %)',
+                                style: {
+                                    color: '#FFFFFF'
+                                }
+                            }
+                        }, { // High (higher than 35 °C)
+                            from: 60,
+                            to: 70,
+                            color: '#FCC000',
+                            label: {
+                                text: 'Fair (60 to 70 %)',
+                                style: {
+                                    color: '#FFFFFF'
+                                }
+                            }
+                        },{ // High (higher than 35 °C)
+                            from: 70,
+                            to: 120,
+                            color: '#F64555',
+                            label: {
+                                text: 'Poor High (70 % and Above)',
+                                style: {
+                                    color: '#FFFFFF'
+                                }
+                            }
+                        }],
+
+                    },
+                    tooltip: {
+                        valueSuffix: ' F/C'
+                    },
+                    plotOptions: {
+                        spline: {
+                            lineWidth: 2,
+                            states: {
+                                hover: {
+                                    lineWidth: 3
+                                }
+                            },
+                            marker: {
+                                enabled: false
+                            },
+                            pointInterval: 3600000 * 24, // one Day
+                            pointStart: Date.UTC(FromDate.getFullYear(), (FromDate.getMonth()), FromDate.getDate(), 0, 0, 0),
+                            pointEnd: Date.UTC(ToDate.getFullYear(), (ToDate.getMonth()), ToDate.getDate(), 0, 0, 0)
+                        }
+                    },
+                    series: [{
+                        name: yAxisLabel,
+                        color: "#6196CA",
+                        data: tempratureData
+
+                    }],
+                    navigation: {
+                        menuItemStyle: {
+                            fontSize: '10px'
+                        }
+                    }
+                });
+            }
+            else
+            {
+            Highcharts.chart('container', {
+                chart: {
+                    type: 'spline',
+                    scrollablePlotArea: {
+                        minWidth: 1000,
+                        scrollPositionX: 1
+                    }
+                },
+                title: {
+                    text: City +' '+ yAxisLabel + ' for the period of ' + formatDate(FromDate) + ' and ' + formatDate(ToDate),
+                    align: 'left'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    labels: {
+                        overflow: 'justify'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: yAxisLabel
+                    },
+                    minorGridLineWidth: 0,
+                    gridLineWidth: 0,
+                    alternateGridColor: null,
+                    plotBands: [{ // Low (less than 25 °C)
+                        from: 0,
+                        to: 25,
+                        color: '#F9D14B',
+                        label: {
+                            text: 'Low (less than 25 °C)',
+                            style: {
+                                color: '#FFFFFF'
+                            }
+                        }
+                    },
+                        , { // High (higher than 25 °C)
+                        from: 25,
+                        to: 50,
+                        color: '#F27920',
+                        label: {
+                            text: 'Medium (higher than 25 °C)',
+                            style: {
+                                color: '#FFFFFF'
+                            }
+                        }
+                    },
+                        , { // High (higher than 35 °C)
+                        from: 50,
+                        to: 100,
+                        color: '#ED2724',
+                        label: {
+                            text: 'High (More than 50 °C)',
+                            style: {
+                                color: '#FFFFFF'
+                            }
+                        }
+                    }]
+                },
+                tooltip: {
+                    valueSuffix: ' F/C'
+                },
+                plotOptions: {
+                    spline: {
+                        lineWidth: 2,
+                        states: {
+                            hover: {
+                                lineWidth: 3
+                            }
+                        },
+                        marker: {
+                            enabled: false
+                        },
+                        pointInterval: 3600000 * 24, // one Day
+                        pointStart: Date.UTC(FromDate.getFullYear(), (FromDate.getMonth()), FromDate.getDate(), 0, 0, 0),
+                         pointEnd: Date.UTC(ToDate.getFullYear(), (ToDate.getMonth()), ToDate.getDate(), 0, 0, 0)
+                    }
+                },
+                series: [{
+                    name: yAxisLabel,
+                    color: "#6196CA",
+                    data: tempratureData
+
+                }],
+                navigation: {
+                    menuItemStyle: {
+                        fontSize: '10px'
+                    }
+                }
+            });
+            }
+        }
+
+       });
+
+    </script>
+ 
+

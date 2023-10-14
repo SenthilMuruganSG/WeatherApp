@@ -1,0 +1,15 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  webapp:
+    image: webapp
+    container_name: webapp
+    ports:
+      - "5000:80"
+  sql:
+    image: "mcr.microsoft.com/mssql/server:2016-latest"
+    container_name: sql_server2016
+    ports: # not actually needed, because the two services are on the same network
+      - "1433:1433" 
+    environment:
+      - ACCEPT_EULA=y
+      - SA_PASSWORD=admin!23
